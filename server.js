@@ -10,6 +10,7 @@ const cors = require('cors');
 const { response } = require('express');
 
 const KV = require('./kv');
+const Users = require('./users');
 
 require('dotenv').config();
 
@@ -214,29 +215,49 @@ app.get('/api/check-logs', checkJwt, function(req, res) {
               logs[logs.length-1] && 
               logs[logs.length-1].log_id != undefined &&
               startFrom !== logs[logs.length-1].log_id) {
-              startFrom = logs[logs.length-1].log_id;
-              for (let i=0; i < logs.length; i++) {
-                if (logs[i].type == "limit_wc") {
-                  console.log("Log...");
-                  console.log(logs[i]);
-                }
-              }
 
+              // Update the latest log id the app is getting from logs
+              startFrom = logs[logs.length-1].log_id;
               const kv = new KV();
               kv.open(function(){
                 kv.set("startFrom", startFrom, function(err, res){
                   if (err) {
                     console.log(err);
                   }
-                  console.log("Set val");
-                  console.log(res);
                   kv.close();
                 })
               });
 
-              res.json({
-                message: 'Hello from a private endpoint! You need to be authenticated and have a scope of read:messages to see this.'
-              });
+              const availableUsers = [];
+              const users = new Users();
+
+              users.open( async function() {
+                for (let i=0; i < logs.length; i++) {
+                  if (logs[i].type == "limit_wc") {
+                    console.log("Log...");
+                    console.log(logs[i]);
+  
+                    await users.findUser(logs[i].user_name, function(err, result){
+                      if (err){
+                        console.log(err);
+                      }
+                      //if (result){
+                        console.log("hey");
+                        console.log(result);
+                        availableUsers.push(result);
+                      //}
+                      if (i === logs.length - 1){
+                        users.close();
+                        console.log("Available users");
+                        console.log(availableUsers);
+                        return res.json({
+                          users: availableUsers
+                        });
+                      }
+                    })
+                  }
+                } 
+              })
             } else {
               console.log("No new user blocks. Current log_id:", startFrom);
               res.json({

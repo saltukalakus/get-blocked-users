@@ -1,0 +1,5 @@
+users.sqlite
+download.csv
+download.csv.gz
+.env
+node_modules

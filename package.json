@@ -20,6 +20,7 @@
     "express": "^4.17.1",
     "express-oauth2-jwt-bearer": "^1.0.0",
     "gunzip-file": "^0.1.1",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "sqlite3": "^5.0.2"
   }
 }

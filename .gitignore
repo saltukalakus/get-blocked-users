@@ -1,4 +1,5 @@
 users.sqlite
+settings.sqlite
 download.csv
 download.csv.gz
 .env

@@ -3,15 +3,25 @@ Auth0 logs shows all blocks including non-existing users. This API server checks
 
 ### Setup 
 
-* Create an API on APIs section with Signing Algorithm selected as RS256 and 
-Identifier set to https://blocked-users
+* Create an API on APIs section with Signing Algorithm set to RS256 and API Identifier set to https://blocked-users
 
 
-* Create an M2M application and give permissions for the API server and the Auth0 management API with following scopes:
+<img width="1782" alt="Screen Shot 2022-03-09 at 00 53 36" src="https://user-images.githubusercontent.com/815705/157334562-87a37605-4788-43b1-b804-e2f7be617e43.png">
 
+
+* Create an M2M application and give permissions for the above API server and the Auth0 management API with following scopes:
+
+```
 read:logs
 read:logs_users
 read:users
+```
+
+<img width="1779" alt="Screen Shot 2022-03-09 at 00 54 28" src="https://user-images.githubusercontent.com/815705/157334670-4e10f343-2ead-4731-9fec-17f20c4e8933.png">
+
+<img width="1723" alt="Screen Shot 2022-03-09 at 01 05 09" src="https://user-images.githubusercontent.com/815705/157334704-9011887d-de18-408c-98cd-f4097c84c3bb.png">
+
+<img width="1539" alt="Screen Shot 2022-03-09 at 01 05 31" src="https://user-images.githubusercontent.com/815705/157334723-e42305e6-cd91-4153-b2a2-b5eea20a7655.png">
 
 * Create .env and change the settings according to your tenant.
 
@@ -56,16 +66,19 @@ curl --request GET \
 
 * Check the user export status and update the local SQLite when completed. This endpoint may need to be pooled until the export file is ready by Auth0.
 
+```
 curl --request GET \
   --url http://localhost:3010/api/update-users-db \
   --header 'authorization: Bearer eyJhb..REDACTED'
+```
 
 * Get the blocked exiting users 
 
+```
 curl --request GET \
   --url http://localhost:3010/api/check-logs \
   --header 'authorization: Bearer eyJhb..REDACTED'
+```
 
-
-### TODOS: 
+### TODO: 
 * Works for a single regular Auth0 DB on a tenant. It could be implemented to support all Auth0 connections on the tenant.

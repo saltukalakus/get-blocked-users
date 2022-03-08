@@ -9,7 +9,7 @@ Auth0 logs shows the account lock events for all attempts including the ones for
 <img width="1782" alt="Screen Shot 2022-03-09 at 00 53 36" src="https://user-images.githubusercontent.com/815705/157334562-87a37605-4788-43b1-b804-e2f7be617e43.png">
 
 
-* Create an M2M application and give permissions for the above API server and the Auth0 management API with following scopes:
+* Create an M2M application and give permissions for the above API server and the Auth0 management API with the following scopes:
 
 ```
 read:logs
@@ -64,7 +64,7 @@ curl --request GET \
   --header 'authorization: Bearer eyJhb..REDACTED'
 ```
 
-* Check the user export status and update the local SQLite when completed. This endpoint may need to be pooled until the export file is ready by Auth0.
+* Check the user export status and update the local SQLite when completed. This endpoint may need to be pooled until the export file is ready by Auth0. Once the export compeles successfull you don't need to export again as the application keep tracks of new signups and user deletions by checking the logs.
 
 ```
 curl --request GET \
@@ -72,7 +72,7 @@ curl --request GET \
   --header 'authorization: Bearer eyJhb..REDACTED'
 ```
 
-* Get the blocked exiting users 
+* Get the blocked exiting users. The endpoint needs to be queried periodically. However for this API to work, the user export and local database update steps should be completed with the above two endpoints.
 
 ```
 curl --request GET \

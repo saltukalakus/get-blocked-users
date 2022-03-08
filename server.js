@@ -210,12 +210,10 @@ app.get('/api/check-logs', checkJwt, function(req, res) {
                 });
               });
             }
-            if (logs && 
-              Array.isArray(logs) && 
-              logs[logs.length-1] && 
-              logs[logs.length-1].log_id != undefined &&
-              startFrom !== logs[logs.length-1].log_id) {
-
+            if (logs && Array.isArray(logs) && 
+              logs[logs.length-1] && logs[logs.length-1].log_id != undefined &&
+              startFrom !== logs[logs.length-1].log_id && logs.length > 0) {
+              
               // Update the latest log id the app is getting from logs
               startFrom = logs[logs.length-1].log_id;
               const kv = new KV();
@@ -231,30 +229,27 @@ app.get('/api/check-logs', checkJwt, function(req, res) {
               const availableUsers = [];
               const users = new Users();
 
-              users.open( async function() {
+              users.open( function() {
                 for (let i=0; i < logs.length; i++) {
                   if (logs[i].type == "limit_wc") {
-                    console.log("Log...");
-                    console.log(logs[i]);
-  
-                    await users.findUser(logs[i].user_name, function(err, result){
+                    users.findUser(logs[i].user_name, function(err, result){
                       if (err){
                         console.log(err);
                       }
-                      //if (result){
+                      if (result){
                         console.log("hey");
                         console.log(result);
                         availableUsers.push(result);
-                      //}
-                      if (i === logs.length - 1){
-                        users.close();
-                        console.log("Available users");
-                        console.log(availableUsers);
-                        return res.json({
-                          users: availableUsers
-                        });
                       }
                     })
+                  }
+                  if (i === logs.length - 1){
+                    users.close();
+                    console.log("Available users");
+                    console.log(availableUsers);
+                    return res.json({
+                      users: availableUsers
+                    });
                   }
                 } 
               })

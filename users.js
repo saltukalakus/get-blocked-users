@@ -24,16 +24,11 @@ var DB = function() {
 	};
 	DB.prototype.findUser = function(email, cb) {
 		self.open(function() {
-			//console.log(self._db);
 			self._db.get('select * from users where email=?', email, function(err, row) {
 				var result = null;
 				if(row !== undefined) {
-					console.log(row);
-					console.log("row isn't undefined")
-					result = JSON.parse(row.email);
-					//console.log(result);
+					result = row;
 				}
-				//console.log(row);
 				cb(err, result);
 			});
 		});

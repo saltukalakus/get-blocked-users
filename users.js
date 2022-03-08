@@ -34,6 +34,53 @@ var DB = function() {
 		});
 	};
 
+	DB.prototype.addUser = function(user_id, email, cb) {
+		self.findUser(user_id, function(err, result) {
+			if(result) {
+				//update
+				self._update(user_id, email, function(err) {
+					if(err) {
+						console.log(err);
+
+					}
+					cb(err);
+				});
+			} else {
+				//insert
+				self._insert(user_id, email, function(err) {
+					if(err) {
+						console.log(err);
+					}
+					cb(err);
+				});
+			}
+		});
+	};
+
+	DB.prototype._update = function(user_id, email, cb) {
+		self.open(function() {
+			self._db.run('update users set email=? where user_id=?', email, user_id, function(err) {
+				cb(err);
+			});
+		});
+	};
+
+	DB.prototype._insert = function(user_id, email, cb) {
+		self.open(function() {
+			self._db.run('insert into users(user_id,email) values(?,?)', user_id, email, function(err) {
+				cb(err);
+			});
+		});
+	};
+
+	DB.prototype.deleteUser = function(user_id, cb) {
+		self.open(function() {
+			self._db.run('delete from users where user_id=?', user_id, function(err) {
+				cb(err);
+			});
+		});
+	};
+
 	DB.prototype.close = function() {
 		self._db.close();
 	};

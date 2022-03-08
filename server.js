@@ -1,8 +1,8 @@
 const fs = require('fs');
+const util = require('util')
 const https = require('https');
 const gunzip = require('gunzip-file')
 const shell = require('shelljs'); 
-const sqlite3 = require('sqlite3')
 const express = require('express');
 const app = express();
 const { auth, requiredScopes, JSONPrimitive } = require('express-oauth2-jwt-bearer');
@@ -16,10 +16,6 @@ require('dotenv').config();
 
 var ManagementAPIClient = require('auth0').ManagementClient;
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 if (!process.env.ISSUER_BASE_URL || !process.env.AUDIENCE) {
   throw 'Make sure you have ISSUER_BASE_URL, and AUDIENCE in your .env file';
 }
@@ -29,8 +25,6 @@ if (!shell.which('sqlite3')) {
   shell.exit(1);
 }
 
-var dbUsers = new sqlite3.Database('users.sqlite');
-
 var startFrom = null;
 const kv = new KV();
 kv.open(function(){
@@ -38,8 +32,7 @@ kv.open(function(){
     if (err) {
       console.log(err);
     }
-    console.log("Get val");
-    console.log(res);
+    console.log("Current log id: ", res);
     if (res !== null) {
       startFrom = res;
     }
@@ -48,7 +41,7 @@ kv.open(function(){
 });
 
 var auth0 = new ManagementAPIClient({
-  domain: process.env.YOUR_ACCOUNT +'.auth0.com',
+  domain: process.env.ISSUER_BASE_URL.replace('https://',''),
   clientId: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
 });
@@ -93,12 +86,6 @@ function downloadExportFile(downloadURL, cb) {
     cb(error)
   }
 }
-
-const corsOptions =  {
-  origin: 'http://localhost:3000'
-};
-
-app.use(cors(corsOptions));
 
 const checkJwt = auth();
 
@@ -191,75 +178,102 @@ app.get('/api/update-users-db', checkJwt, function(req, res) {
 });
 
 app.get('/api/check-logs', checkJwt, function(req, res) {
-          let params = {
-            q : "type:limit_wc",
-            sort:"date:1",
-            from: startFrom?startFrom:""
+  let params = {
+    sort:"date:1",
+    from: startFrom?startFrom:""
+  }
+
+  auth0.getLogs(params, function (err, logs){
+    if (err){
+      console.log("In error: ", err);
+      startFrom = null;
+      const kv = new KV();
+      kv.open(function(){
+        kv.rm("startFrom", function(err){
+          if (err) {
+            console.log(err);
           }
-          auth0.getLogs(params, function (err, logs){
-            if (err){
-              console.log("In error: ", err);
-              startFrom = null;
-              const kv = new KV();
-              kv.open(function(){
-                kv.rm("startFrom", function(err){
-                  if (err) {
-                    console.log(err);
-                  }
-                  kv.close();
-                });
-              });
-            }
-            if (logs && Array.isArray(logs) && 
-              logs[logs.length-1] && logs[logs.length-1].log_id != undefined &&
-              startFrom !== logs[logs.length-1].log_id && logs.length > 0) {
+          kv.close();
+        });
+      });
+    }
+    console.log("Current log id : ", startFrom);
+    if (logs && Array.isArray(logs) && 
+        logs[logs.length-1] && logs[logs.length-1].log_id != undefined &&
+        startFrom !== logs[logs.length-1].log_id && logs.length > 0) {
               
-              // Update the latest log id the app is getting from logs
-              startFrom = logs[logs.length-1].log_id;
-              const kv = new KV();
-              kv.open(function(){
-                kv.set("startFrom", startFrom, function(err, res){
-                  if (err) {
-                    console.log(err);
-                  }
-                  kv.close();
-                })
-              });
+      // Update the latest log id the app is getting from logs
+      startFrom = logs[logs.length-1].log_id;
+      const kv = new KV();
+      kv.open(function(){
+        kv.set("startFrom", startFrom, function(err, res){
+          if (err) {
+            console.log(err);
+          }
+          kv.close();
+        })
+      });
 
-              const availableUsers = [];
-              const users = new Users();
+      const users = new Users();
+      const findUser = util.promisify(users.findUser);
+      const addUser  = util.promisify(users.addUser);
+      const deleteUser = util.promisify(users.deleteUser);
 
-              users.open( function() {
-                for (let i=0; i < logs.length; i++) {
-                  if (logs[i].type == "limit_wc") {
-                    users.findUser(logs[i].user_name, function(err, result){
-                      if (err){
-                        console.log(err);
-                      }
-                      if (result){
-                        console.log("hey");
-                        console.log(result);
-                        availableUsers.push(result);
-                      }
-                    })
-                  }
-                  if (i === logs.length - 1){
-                    users.close();
-                    console.log("Available users");
-                    console.log(availableUsers);
-                    return res.json({
-                      users: availableUsers
-                    });
-                  }
-                } 
-              })
-            } else {
-              console.log("No new user blocks. Current log_id:", startFrom);
-              res.json({
-                message: `No new user blocks. Current log_id: ${startFrom}`
-              });
+      users.open( async function() {
+
+      // Array of blocked users
+      const blockedUsers = [];
+
+      for (let i=0; i < logs.length; i++) {
+
+        // Add users added on Auth0 
+        if (logs[i].type == "ss" && 
+            logs[i].connection_id == process.env.CONNECTION_ID_TO_EXPORT) {
+          try{
+            await addUser(logs[i].user_id, logs[i].user_name);
+          } catch(err) {
+            console.log(err);
+          }
+        }
+                    
+        // Remove users deleted on Auth0 
+        if (logs[i].type == "sdu"  && 
+            logs[i].connection_id == process.env.CONNECTION_ID_TO_EXPORT) {
+              try{
+                let user_id = logs[i].description.replace("user_id: ", "auth0|");
+                await deleteUser(user_id);
+              } catch(err) {
+                console.log(err);
+              }
+        }
+                                      
+        // Find block users and check if the user exists in the DB
+        if (logs[i].type == "limit_wc" && 
+            logs[i].connection_id == process.env.CONNECTION_ID_TO_EXPORT) {
+          try{
+            const user = await findUser(logs[i].user_name);
+            if (user) {
+              blockedUsers.push(user);
             }
-          });
+          } catch(err) {
+            console.log(err);
+          }
+        }
+      } 
+      users.close();
+      console.log("Blocked users");
+      console.log(blockedUsers);
+      return res.json({
+        users: blockedUsers
+      });
+    })
+  } else {
+    console.log("No new user blocks. Current log_id:", startFrom);
+    res.json({
+      message: `No new user blocks. Current log_id: ${startFrom}`
+    });
+  }
+  });
 });
 
 app.use(function(err, req, res, next){

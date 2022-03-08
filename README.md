@@ -1,7 +1,7 @@
 ## get-blocked-users
-Auth0 logs shows the account lock events for all attempts including the ones for the non-existing users in the tenant. This project returns the logs for the user blocks for the exsiting users only. For the API to work it is required to export the users from the connection and then start the log polling with /api/check-logs endpoint. This API exports the logs and returns a JSON response for the users who are blocked. 
+Auth0 logs show the account lock events for all attempts, including those for the non-existing users. This project returns the records for the user blocks for the existing users only. For the API to work, it is required to export the users from the connection and then start the log polling with the `/api/check-logs` endpoint. This API exports the logs and returns a JSON response for the blocked users.
 
-### Setup 
+### Setup
 
 * Create an API on APIs section with Signing Algorithm set to RS256 and API Identifier set to https://blocked-users
 
@@ -29,7 +29,7 @@ read:users
 > cp .env.example .env
 ```
 
-* For local testing make sure you have sqlite3 installed on the computer.
+* For local testing, make sure you have sqlite3 installed on the computer.
 
 * Install dependencies.
 
@@ -47,7 +47,7 @@ read:users
 
 ### API usage:
 
-* Get the access token for the API:
+* Get the Access Token for the API:
 
 ```
 curl --request POST \
@@ -64,7 +64,7 @@ curl --request GET \
   --header 'authorization: Bearer eyJhb..REDACTED'
 ```
 
-* Check the user export status and update the local SQLite when completed. This endpoint may need to be pooled until the export file is ready by Auth0. Once the export compeles successfull you don't need to export again as the application keep tracks of new signups and user deletions by checking the logs.
+* Check the user export status and update the local SQLite when completed. This endpoint may need to be queried until the export file is ready by Auth0. Once the export completes successfully, you don't need to export again as the application keeps track of new signups and user deletions by checking the logs.
 
 ```
 curl --request GET \
@@ -72,7 +72,7 @@ curl --request GET \
   --header 'authorization: Bearer eyJhb..REDACTED'
 ```
 
-* Get the blocked exiting users. The endpoint needs to be queried periodically. However for this API to work, the user export and local database update steps should be completed with the above two endpoints.
+* Get the blocked exiting users. The endpoint needs to be queried periodically. However, the user export and local database update steps should be completed with the above two endpoints for this API to work.
 
 ```
 curl --request GET \
@@ -80,5 +80,5 @@ curl --request GET \
   --header 'authorization: Bearer eyJhb..REDACTED'
 ```
 
-### TODO: 
+### TODO:
 * Works for a single regular Auth0 DB on a tenant. It could be implemented to support all Auth0 connections on the tenant.

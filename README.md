@@ -1,5 +1,5 @@
 ## get-blocked-users
-Auth0 logs shows all blocks including non-existing users. This API server checks the logs for the exsiting users and returns only the exsiting blocked users.
+Auth0 logs shows the account lock events for all attempts including the ones for the non-existing users in the tenant. This project returns the logs for the user blocks for the exsiting users only. For the API to work it is required to export the users from the connection and then start the log polling with /api/check-logs endpoint. This API exports the logs and returns a JSON response for the users who are blocked. 
 
 ### Setup 
 
